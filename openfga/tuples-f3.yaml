@@ -1,0 +1,19 @@
+# The Copilot and the research agent work for the AI-Team (so they see only AI-Team cases)
+- user: agent:orchestrator
+  relation: assigned_agent
+  object: group:ai-team
+- user: agent:research
+  relation: assigned_agent
+  object: group:ai-team
+
+# Who may move money: managers (any amount) and the payment agent (up to ₹1,000)
+- user: group:managers#member
+  relation: executor
+  object: tool:payment
+- user: agent:payment
+  relation: executor
+  object: tool:payment
+  condition:
+    name: within_limit
+    context:
+      limit: 1000

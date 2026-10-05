@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NexaBank Fraud Ops</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f6f8;--surface:#fff;--surface-2:#f2f4f7;--surface-3:#e9ecf1;--border:#e4e7ec;--border-strong:#d0d5dd;
+  --text:#101828;--text-2:#475467;--text-3:#667085;
+  --accent:#3451d1;--accent-hover:#2a42b0;--accent-soft:#eef1fd;--accent-text:#2a42b0;
+  --allow:#067647;--allow-soft:#ecfdf3;--allow-border:#abefc6;
+  --deny:#b42318;--deny-soft:#fef3f2;--deny-border:#fecdca;
+  --warn:#b54708;--warn-soft:#fffaeb;--warn-border:#fedf89;
+  --c-user:#175cd3;--c-user-soft:#eff8ff;--c-user-border:#b2ddff;
+  --c-agent:#6938ef;--c-agent-soft:#f4f3ff;--c-agent-border:#d9d6fe;
+  --c-group:#0e7c66;--c-group-soft:#edfcf7;--c-group-border:#a6ecd9;
+  --c-obj:#b54708;--c-obj-soft:#fef6ee;--c-obj-border:#f9dbaf;
+  --code-bg:#f7f8fa;--shadow-sm:0 1px 2px rgba(16,24,40,.05);--shadow:0 4px 16px rgba(16,24,40,.08);
+  --font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b0d11;--surface:#12151b;--surface-2:#181c23;--surface-3:#20252e;--border:#232832;--border-strong:#333a46;
+  --text:#e8ebf0;--text-2:#a9b1be;--text-3:#7e8896;--accent:#6f87ff;--accent-hover:#8a9cff;--accent-soft:#1a2147;--accent-text:#a9b8ff;
+  --allow:#47cd89;--allow-soft:#0c261a;--allow-border:#155c37;--deny:#f97066;--deny-soft:#2b1210;--deny-border:#7a271a;
+  --warn:#fdb022;--warn-soft:#2a1f08;--warn-border:#7a4a06;
+  --c-user:#84adff;--c-user-soft:#121f3a;--c-user-border:#24407a;--c-agent:#b39dff;--c-agent-soft:#1d1838;--c-agent-border:#3e3375;
+  --c-group:#5fd4b0;--c-group-soft:#0d2620;--c-group-border:#1d5b4b;--c-obj:#f7b27a;--c-obj-soft:#2a1c0f;--c-obj-border:#6b3f17;
+  --code-bg:#0f1217;--shadow-sm:none;--shadow:0 8px 24px rgba(0,0,0,.4);color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0b0d11;--surface:#12151b;--surface-2:#181c23;--surface-3:#20252e;--border:#232832;--border-strong:#333a46;
+  --text:#e8ebf0;--text-2:#a9b1be;--text-3:#7e8896;--accent:#6f87ff;--accent-hover:#8a9cff;--accent-soft:#1a2147;--accent-text:#a9b8ff;
+  --allow:#47cd89;--allow-soft:#0c261a;--allow-border:#155c37;--deny:#f97066;--deny-soft:#2b1210;--deny-border:#7a271a;
+  --warn:#fdb022;--warn-soft:#2a1f08;--warn-border:#7a4a06;
+  --c-user:#84adff;--c-user-soft:#121f3a;--c-user-border:#24407a;--c-agent:#b39dff;--c-agent-soft:#1d1838;--c-agent-border:#3e3375;
+  --c-group:#5fd4b0;--c-group-soft:#0d2620;--c-group-border:#1d5b4b;--c-obj:#f7b27a;--c-obj-soft:#2a1c0f;--c-obj-border:#6b3f17;
+  --code-bg:#0f1217;--shadow-sm:none;--shadow:0 8px 24px rgba(0,0,0,.4);color-scheme:dark;}
+*{box-sizing:border-box}
+html.large body{zoom:1.15}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.55 var(--font);-webkit-font-smoothing:antialiased}
+a{color:var(--accent-text);text-decoration:none}
+svg.i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+code,.mono{font-family:var(--mono);font-size:.88em}
+code{background:var(--surface-2);border:1px solid var(--border);padding:.05em .4em;border-radius:5px}
+p{margin:0 0 .6em}
+/* top bar */
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;min-height:60px;padding:8px 20px;flex-wrap:wrap;
+  background:color-mix(in srgb,var(--surface) 90%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;white-space:nowrap}
+.mark{width:28px;height:28px;border-radius:7px;background:var(--text);color:var(--surface);display:grid;place-items:center}
+.brand .sub{color:var(--text-3);font-weight:500}
+.mode{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:5px 11px;border-radius:99px;border:1px solid}
+.mode.legacy{color:var(--warn);background:var(--warn-soft);border-color:var(--warn-border)}
+.mode.openfga{color:var(--allow);background:var(--allow-soft);border-color:var(--allow-border)}
+.mode i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.flags{display:flex;gap:6px;flex-wrap:wrap}
+.flag{font-size:11.5px;color:var(--text-3);padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface)}
+.flag b{color:var(--text-2)}.flag.on b{color:var(--allow)}
+.right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.who{display:flex;align-items:center;gap:9px;padding:4px 10px 4px 4px;border:1px solid var(--border);border-radius:99px;background:var(--surface)}
+.who small{display:block;font-size:11.5px;color:var(--text-3);line-height:1.2}.who b{display:block;font-size:13px;line-height:1.2}
+.avatar{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:600 11.5px var(--font);color:var(--c-user);background:var(--c-user-soft);border:1px solid var(--c-user-border);flex:none}
+.iconbtn{display:inline-grid;place-items:center;width:32px;height:32px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text-2);cursor:pointer;font:600 12px var(--font)}
+.iconbtn:hover{color:var(--text);border-color:var(--border-strong)}
+/* buttons, inputs */
+.btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);font:500 13px var(--font);cursor:pointer;white-space:nowrap;box-shadow:var(--shadow-sm)}
+.btn:hover{background:var(--surface-2)}.btn svg{width:14px;height:14px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn.primary:hover{background:var(--accent-hover)}
+.btn.good{color:var(--allow);border-color:var(--allow-border);background:var(--allow-soft)}
+.btn.bad{color:var(--deny);border-color:var(--deny-border);background:var(--deny-soft)}
+.btn.locked{color:var(--text-3);border-style:dashed;background:var(--surface);box-shadow:none}
+.btn[disabled]{opacity:.6;cursor:progress}
+input,textarea,select{font:13.5px var(--font);padding:7px 10px;border:1px solid var(--border-strong);border-radius:8px;background:var(--surface);color:var(--text);outline:none;width:100%}
+textarea{resize:vertical;min-height:70px}
+input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+/* layout */
+.shell{display:grid;grid-template-columns:250px minmax(0,1fr) 380px;gap:18px;padding:18px 20px;max-width:1700px;margin:0 auto;align-items:start}
+@media (max-width:1250px){.shell{grid-template-columns:230px minmax(0,1fr)}.copilot{grid-column:1/-1}}
+@media (max-width:800px){.shell{grid-template-columns:1fr;padding:14px 12px}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow-sm);min-width:0}
+.panel-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.panel-h h2{margin:0;font-size:14.5px;font-weight:600}.panel-h p{margin:1px 0 0;font-size:12.5px;color:var(--text-3)}
+.panel-b{padding:14px 16px}
+.sticky{position:sticky;top:78px}
+.side-h{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-3);margin:16px 0 6px}
+.side-h:first-child{margin-top:0}
+.nav-item{display:block;width:100%;text-align:left;padding:9px 11px;margin-bottom:5px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;cursor:pointer}
+.nav-item:hover{border-color:var(--accent)}.nav-item.on{border-color:var(--accent);background:var(--accent-soft)}
+.nav-item b{display:block;font-size:13.5px;font-weight:600}.nav-item small{display:block;font-size:12px;color:var(--text-3)}
+.muted{color:var(--text-3)}.small{font-size:12.5px}
+.badge{font:600 11px var(--font);padding:2px 8px;border-radius:99px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2)}
+.tag{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:99px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2)}
+/* case page */
+.case-h{display:flex;justify-content:space-between;gap:16px;padding:18px 20px;border-bottom:1px solid var(--border)}
+.case-h h1{margin:3px 0 2px;font-size:21px;letter-spacing:-.015em}
+.eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)}
+.exposure{text-align:right}.exposure small{display:block;font-size:11.5px;color:var(--text-3)}.exposure b{font-size:21px;font-variant-numeric:tabular-nums}
+.sec{padding:16px 20px;border-bottom:1px solid var(--border)}.sec:last-child{border-bottom:0}
+.sec-t{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin-bottom:10px}
+.row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}.row:last-child{border-bottom:0}
+.row .t{flex:1;min-width:0}.row .t b{display:block;font-weight:600}.row .t small{color:var(--text-3);font-size:12px}
+.btnrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ic{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;background:var(--surface-2);color:var(--text-3);flex:none}
+table.tbl{width:100%;border-collapse:collapse;font-size:12.8px}
+.tbl th{text-align:left;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text-3);padding:7px 10px;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}.tbl tr:last-child td{border-bottom:0}
+.tbl .num{text-align:right;font-variant-numeric:tabular-nums}
+.sus td{background:var(--deny-soft)}
+.wrap{border:1px solid var(--border);border-radius:10px;overflow:auto}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media (max-width:700px){.grid2{grid-template-columns:1fr}}
+/* identity chips & decisions */
+.ent{display:inline-flex;border-radius:6px;border:1px solid var(--border-strong);overflow:hidden;font-family:var(--mono);font-size:12px;line-height:1;vertical-align:middle;white-space:nowrap}
+.ent .k{padding:4px 5px;font-size:10px;font-weight:600;text-transform:uppercase;display:flex;align-items:center}
+.ent .v{padding:4px 7px;background:var(--surface);display:flex;align-items:center}
+.ent.user{border-color:var(--c-user-border)}.ent.user .k{background:var(--c-user-soft);color:var(--c-user)}
+.ent.agent{border-color:var(--c-agent-border)}.ent.agent .k{background:var(--c-agent-soft);color:var(--c-agent)}
+.ent.group{border-color:var(--c-group-border)}.ent.group .k{background:var(--c-group-soft);color:var(--c-group)}
+.ent.obj{border-color:var(--c-obj-border)}.ent.obj .k{background:var(--c-obj-soft);color:var(--c-obj)}
+.dec{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 6px;border-radius:6px;font:700 11px var(--font);letter-spacing:.06em;border:1px solid;white-space:nowrap}
+.dec svg{width:12px;height:12px;stroke-width:2.4}
+.dec.allow{color:var(--allow);background:var(--allow-soft);border-color:var(--allow-border)}
+.dec.deny{color:var(--deny);background:var(--deny-soft);border-color:var(--deny-border)}
+.dec.warn{color:var(--warn);background:var(--warn-soft);border-color:var(--warn-border)}
+.eng{font:600 11px var(--font);padding:2px 7px;border-radius:5px;white-space:nowrap}
+.eng.legacy{color:var(--warn);background:var(--warn-soft)}.eng.openfga{color:var(--allow);background:var(--allow-soft)}.eng.other{color:var(--accent-text);background:var(--accent-soft)}
+.checks{display:flex;flex-direction:column;gap:4px;margin-top:4px}
+.check{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px}
+.reason{color:var(--text-3);font-size:11.5px}
+/* banner */
+.banner{margin:0 0 14px;padding:12px 14px;border-radius:12px;border:1px solid;animation:in .2s ease-out}
+.banner.allow{background:var(--allow-soft);border-color:var(--allow-border)}.banner.deny{background:var(--deny-soft);border-color:var(--deny-border)}
+.banner .msg{font-weight:600;margin-bottom:4px;display:flex;gap:8px;align-items:center}
+@keyframes in{from{opacity:0;transform:translateY(-3px)}to{opacity:1}}
+/* copilot */
+.copilot .panel-b{display:flex;flex-direction:column;gap:10px}
+.chat{display:flex;flex-direction:column;gap:10px;height:440px;overflow:auto;padding:2px}
+.bubble{max-width:94%;padding:9px 12px;border-radius:12px;font-size:13.5px;white-space:pre-wrap;word-wrap:break-word}
+.bubble.user{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+.bubble.bot{align-self:flex-start;background:var(--surface-2);border:1px solid var(--border);border-bottom-left-radius:4px}
+.steps{margin-top:8px;border-top:1px dashed var(--border-strong);padding-top:8px;display:flex;flex-direction:column;gap:7px;white-space:normal}
+.stp{font-size:12px;padding:7px 9px;border-radius:8px;background:var(--surface);border:1px solid var(--border)}
+.stp-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.stp-h b{font-family:var(--mono);font-size:11.5px}
+.typing{align-self:flex-start;color:var(--text-3);font-size:12.5px}
+.prompts{display:flex;flex-wrap:wrap;gap:6px}
+.prompt{font:12px var(--font);padding:5px 9px;border-radius:99px;border:1px dashed var(--border-strong);background:none;color:var(--text-2);cursor:pointer}
+.prompt:hover{border-style:solid;color:var(--text)}
+.composer{display:flex;gap:8px}
+/* activity */
+.activity{margin:0 20px 30px;max-width:1660px}
+@media (min-width:1700px){.activity{margin:0 auto 30px}}
+.act-row td{font-size:12.5px}
+/* login */
+.login{max-width:560px;margin:60px auto;padding:0 16px}
+.login .panel{padding:28px}
+.login h1{font-size:24px;letter-spacing:-.02em;margin:10px 0 6px}
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(10,12,16,.45);display:grid;place-items:center;z-index:50;padding:16px}
+.modal .panel{max-width:680px;width:100%;max-height:85vh;overflow:auto;box-shadow:var(--shadow)}
+.doc-body{white-space:pre-wrap;font-size:14px;line-height:1.6;background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:14px}
+.empty{display:grid;place-items:center;text-align:center;color:var(--text-3);padding:50px 20px}
+.spin{width:13px;height:13px;border:2px solid var(--border-strong);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;display:inline-block;vertical-align:-2px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const P = {
+  check: '<path d="M3.5 8.5l3 3 6-7"/>', x: '<path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/>', lock: '<rect x="3.5" y="7" width="9" height="6.5" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/>',
+  doc: '<path d="M4 2.5h5l3 3v8H4z"/><path d="M9 2.5v3h3"/>', shield: '<path d="M8 2l5 2v4c0 3-2.2 5.2-5 6-2.8-.8-5-3-5-6V4z"/>',
+  send: '<path d="M2 8h10M8 4l4 4-4 4"/>', play: '<path d="M5 3.5l8 4.5-8 4.5z"/>', key: '<circle cx="5.5" cy="8" r="3"/><path d="M8.5 8H14M12 8v2.5M14 8v2"/>',
+  moon: '<path d="M13 9.5A5.5 5.5 0 1 1 6.5 3a4.5 4.5 0 0 0 6.5 6.5z"/>', out: '<path d="M6 13.5H3.5v-11H6M10 11l3-3-3-3M13 8H6"/>',
+  bot: '<rect x="3" y="5" width="10" height="8" rx="2"/><path d="M8 2.5V5M6 9h.01M10 9h.01"/>', info: '<circle cx="8" cy="8" r="6"/><path d="M8 7.5v3.5M8 5h.01"/>',
+  graph: '<circle cx="4" cy="8" r="1.8"/><circle cx="12" cy="4" r="1.8"/><circle cx="12" cy="12" r="1.8"/><path d="M5.6 7.2l4.8-2.4M5.6 8.8l4.8 2.4"/>',
+};
+const I = n => `<svg class="i" viewBox="0 0 16 16">${P[n]}</svg>`;
+const inr = n => '₹' + Number(n).toLocaleString('en-IN');
+const initials = n => n.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+const kind = s => { const t = s.split(':')[0]; return ['user', 'agent', 'group'].includes(t) ? t : 'obj'; };
+function ent(s) { const i = s.indexOf(':'); if (i < 0) return esc(s); return `<span class="ent ${kind(s)}"><span class="k">${esc(s.slice(0, i))}</span><span class="v">${esc(s.slice(i + 1))}</span></span>`; }
+const dec = (ok, label) => `<span class="dec ${ok === null ? 'warn' : ok ? 'allow' : 'deny'}">${I(ok ? 'check' : ok === null ? 'info' : 'x')}${label || (ok ? 'ALLOW' : 'DENY')}</span>`;
+const engCls = e => /legacy/i.test(e) ? 'legacy' : e === 'OpenFGA' ? 'openfga' : 'other';
+const loading = t => `<span class="muted"><span class="spin"></span>${t || 'Loading…'}</span>`;
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, {method: opts.method || 'GET', headers: {'Content-Type': 'application/json'}, body: opts.body ? JSON.stringify(opts.body) : undefined});
+  let data = {}; try { data = await r.json(); } catch (e) {}
+  if (r.status === 401 && !opts.quiet) { S.user = null; render(); }
+  return {status: r.status, data};
+}
+
+let S = {user: null, view: null, caseId: null, chat: [], home: null};
+
+function checksHtml(checks) {
+  return `<div class="checks">${(checks || []).map(c => `<div class="check">${ent(c.principal)} ${dec(c.allowed)} <span class="reason">${esc(c.reason)}</span></div>`).join('')}</div>`;
+}
+function banner(ok, msg, decision) {
+  return `<div class="banner ${ok ? 'allow' : 'deny'}"><div class="msg">${dec(ok, ok ? 'ALLOWED' : 'DENIED')} ${esc(msg)}</div>
+    ${decision ? `<div class="small muted">${esc(decision.engine)} · ${esc(decision.action)} · ${ent(decision.resource)}</div>${checksHtml(decision.checks)}` : ''}</div>`;
+}
+
+// ------------------------------------------------------------- shell
+async function boot() {
+  const {status, data} = await api('/api/session', {quiet: true});
+  S.session = status === 200 ? data : null;
+  S.user = S.session ? data.user : null;
+  render();
+}
+function render() {
+  if (!S.user) return renderLogin();
+  const s = S.session;
+  $('#root').innerHTML = `
+  <header class="topbar">
+    <div class="brand"><div class="mark">${I('shield')}</div>NexaBank <span class="sub">Fraud Ops</span></div>
+    <span class="mode ${s.mode}" title="AUTHZ_MODE in .env"><i></i>${s.mode === 'openfga' ? 'Authorization: OpenFGA' : 'Authorization: legacy role checks'}</span>
+    <div class="flags">
+      ${s.mode === 'openfga' ? `<span class="flag">store <b class="mono">…${esc(s.store.slice(-6))}</b></span><span class="flag">model <b class="mono">${esc(s.model === 'latest' ? 'latest' : '…' + s.model.slice(-6))}</b></span>` : ''}
+      <span class="flag ${s.sync ? 'on' : ''}">Keycloak sync <b>${s.sync ? 'on' : 'off'}</b></span>
+      <span class="flag ${s.on_behalf_of ? 'on' : ''}">On-behalf-of <b>${s.on_behalf_of ? 'on' : 'off'}</b></span>
+    </div>
+    <div class="right">
+      ${s.store ? `<a class="iconbtn" href="https://play.fga.dev/sandbox/?fga_api_host=127.0.0.1%3A8090&fga_api_scheme=http" target="_blank" title="OpenFGA Playground (store ${esc(s.store)})">${I('graph')}</a>` : ''}
+      <a class="iconbtn" href="http://localhost:8180/admin/master/console/#/nexabank/users" target="_blank" title="Keycloak admin console">${I('key')}</a>
+      <button class="iconbtn" onclick="document.documentElement.classList.toggle('large')" title="Projector text size">Aa</button>
+      <button class="iconbtn" onclick="toggleTheme()" title="Light / dark">${I('moon')}</button>
+      <div class="who"><span class="avatar">${initials(S.user.name)}</span><div><b>${esc(S.user.name)}</b><small>${esc(S.user.groups.filter(g => g !== 'Employees').join(', ') || 'Employees')}</small></div></div>
+      <a class="btn" href="/logout">${I('out')}Sign out</a>
+    </div>
+  </header>
+  <div class="shell">
+    <aside class="panel sticky" id="nav"><div class="panel-b">${loading()}</div></aside>
+    <main id="main"></main>
+    <aside class="panel copilot sticky">
+      <div class="panel-h"><div><h2>${I('bot')} Fraud Copilot</h2><p>AI agents acting on your behalf · Groq LLM</p></div></div>
+      <div class="panel-b">
+        <div class="chat" id="chat"></div>
+        <div class="prompts" id="prompts"></div>
+        <form class="composer" onsubmit="ask(event)"><input id="q" placeholder="Ask the Copilot…" autocomplete="off"><button class="btn primary" id="qbtn">${I('send')}</button></form>
+      </div>
+    </aside>
+  </div>
+  <section class="panel activity">
+    <div class="panel-h"><div><h2>Authorization activity</h2><p>Every decision the app made, newest first. People, agents, the rogue agent and Keycloak sync. Also in <code>docker compose logs -f fraud-ops</code></p></div>
+      <label class="small muted"><input type="checkbox" id="hideRogue" style="width:auto" onchange="loadActivity()"> hide rogue agent</label></div>
+    <div id="activity"></div>
+  </section>`;
+  renderChat();
+  loadHome();
+  loadActivity();
+}
+function renderLogin() {
+  $('#root').innerHTML = `<div class="login"><div class="panel">
+    <div class="brand"><div class="mark">${I('shield')}</div>NexaBank <span class="sub">Fraud Ops</span></div>
+    <h1>Sign in to Fraud Operations</h1>
+    <p class="muted">You will be redirected to the bank's identity provider (Keycloak).</p>
+    <p style="margin:18px 0"><a class="btn primary" href="/login">${I('key')}Sign in with Keycloak</a></p>
+    <div class="wrap"><table class="tbl"><tr><th>Username</th><th>Who</th><th>Keycloak groups</th></tr>
+      <tr><td class="mono">rahul</td><td>Fraud investigator</td><td>Employees, AI-Team</td></tr>
+      <tr><td class="mono">amit</td><td>Team manager</td><td>Employees, Managers</td></tr>
+      <tr><td class="mono">neha</td><td>Compliance reviewer</td><td>Employees, AI-Reviewers</td></tr>
+      <tr><td class="mono">sudhanshu</td><td>Platform admin</td><td>Employees, Administrators</td></tr></table></div>
+    <p class="small muted" style="margin-top:10px">Lab password for every account: <code>password</code></p></div></div>`;
+}
+function toggleTheme() {
+  const d = document.documentElement, dark = d.dataset.theme ? d.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  d.dataset.theme = dark ? 'light' : 'dark';
+}
+
+// ------------------------------------------------------------- navigation
+async function loadHome() {
+  const {status, data} = await api('/api/home');
+  if (status !== 200) return;
+  S.home = data;
+  const item = (on, title, sub, act) => `<button class="nav-item${on ? ' on' : ''}" onclick="${act}"><b>${title}</b><small>${sub}</small></button>`;
+  $('#nav').innerHTML = `<div class="panel-b">
+    <div class="side-h">My cases <span class="badge">${data.cases.length}</span></div>
+    ${data.cases.map(c => item(S.caseId === c.id, `${esc(c.id)} · ${esc(c.title)}`, `${esc(c.customer)} · ${inr(c.exposure)}`, `openCase('${c.id}')`)).join('') || '<p class="small muted">No cases visible to you.</p>'}
+    <div class="side-h">Review queue <span class="badge">${data.reviews.length}</span></div>
+    ${data.reviews.map(r => item(false, `${esc(r.title)}`, `${esc(r.id)} · prepared by ${esc(r.prepared_by)}`, `approve('${r.id}')`)).join('') || '<p class="small muted">Nothing to approve.</p>'}
+    ${data.admin ? `<div class="side-h">Administration</div>${item(S.view === 'admin', 'Admin console', 'Agents, identities, settings', 'openAdmin()')}` : ''}
+    <div class="side-h">Open by ID</div>
+    <form class="btnrow" onsubmit="event.preventDefault();openById($('#cid').value.trim())"><input id="cid" class="mono" placeholder="FC-2077 or kyc-101" style="flex:1;width:auto"><button class="btn">Open</button></form>
+    <p class="small muted" style="margin:6px 0 0">A case (FC-…) or a document (kyc-…, stmt-…).</p>
+    <div class="side-h">How this list was built</div>
+    ${data.trace.map(t => `<div class="small" style="margin-bottom:6px"><span class="eng ${t.call === 'ListObjects' ? 'openfga' : 'legacy'}">${esc(t.call)}</span> <span class="muted mono" style="font-size:11px">${esc(t.query)}</span></div>`).join('')}
+  </div>`;
+  if (!S.view) {
+    $('#main').innerHTML = `<div class="panel"><div class="empty"><div>${I('doc')}<p style="margin-top:8px">${data.cases.length ? 'Select a case to start' : 'You have no cases. Check your review queue or ask the Copilot.'}</p></div></div></div>`;
+  }
+  renderPrompts();
+}
+
+// ------------------------------------------------------------- case page
+async function openCase(id, flash) {
+  S.view = 'case'; S.caseId = id;
+  $('#main').innerHTML = `<div class="panel"><div class="panel-b">${loading()}</div></div>`;
+  const {status, data} = await api(`/api/cases/${encodeURIComponent(id)}`);
+  loadActivity(); loadHome();
+  if (status !== 200) {
+    $('#main').innerHTML = `<div class="panel"><div class="panel-b">${banner(false, data.error || 'Not allowed', data.decision)}
+      <p class="muted">The server asked its authorization engine and the answer was no. Hiding a case from the menu is not enough: the API checks every request.</p></div></div>`;
+    return;
+  }
+  const c = data.case;
+  const b = (ok, label, act, cls = '') => `<button class="btn ${ok ? cls : 'locked'}" title="${ok ? 'Allowed' : 'Not allowed for you: click to try anyway'}" onclick="${act}">${ok ? '' : I('lock')}${label}</button>`;
+  const sar = data.reports[0];
+  $('#main').innerHTML = `${flash || ''}<div class="panel">
+    <div class="case-h"><div><div class="eyebrow">${esc(c.id)} · ${esc(c.status)} · opened ${esc(c.opened)}</div><h1>${esc(c.title)}</h1>
+      <div class="muted small">${esc(c.customer)} (${esc(c.customer_id)}) · Team ${esc(c.team)} · Lead ${esc(c.lead)}</div></div>
+      <div class="exposure"><small>Exposure</small><b>${inr(c.exposure)}</b></div></div>
+    <div class="sec"><p style="margin:0">${esc(c.summary)}</p></div>
+    <div class="sec"><div class="sec-t">Documents <button class="btn" onclick="const f=$('#up');f.style.display=f.style.display==='grid'?'none':'grid'">Upload</button></div>
+      <form id="up" onsubmit="upload(event,'${c.id}')" style="margin-bottom:12px;display:none;gap:8px">
+        <input name="title" placeholder="Title, e.g. Merchant response" required><textarea name="body" placeholder="Document text" required></textarea>
+        <div><button class="btn primary">Upload to ${esc(c.id)}</button></div></form>
+      ${data.documents.map(d => `<div class="row"><span class="ic">${I('doc')}</span><div class="t"><b>${esc(d.title)} ${d.archived ? '<span class="tag">archived</span>' : ''}</b>
+        <small>${ent('document:' + d.id)} · uploaded by ${esc(d.uploaded_by)}</small></div>
+        <div class="btnrow">${b(d.can_view, 'View', `viewDoc('${d.id}')`)}${b(d.can_delete, 'Archive', `archive('${d.id}')`, 'bad')}</div></div>`).join('')}
+    </div>
+    ${sar ? `<div class="sec"><div class="sec-t">Suspicious Activity Report</div>
+      <div class="row"><span class="ic">${I('shield')}</span><div class="t"><b>${esc(sar.title)} · ${esc(sar.status)}</b>
+        <small>${ent('report:' + sar.id)} · prepared by ${esc(sar.prepared_by)}${sar.approved_by ? ' · approved by ' + esc(sar.approved_by) : ''}</small></div>
+        <div class="btnrow">${b(sar.can_approve, 'Approve', `approve('${sar.id}')`, 'good')}</div></div></div>` : ''}
+    <div class="sec"><div class="sec-t">Reimburse the customer</div>
+      <form class="btnrow" onsubmit="reimburse(event,'${c.id}')"><input name="amount" type="number" min="1" placeholder="Amount in ₹" style="width:160px" required>
+        <input name="reason" placeholder="Reason" style="flex:1;width:auto">${b(data.can_reimburse, 'Reimburse', '', 'primary').replace('onclick=""', '')}</form>
+      ${data.payments.length ? `<div class="wrap" style="margin-top:10px"><table class="tbl"><tr><th>When</th><th class="num">Amount</th><th>Requested by</th><th>Executed by</th><th>Reason</th></tr>
+        ${data.payments.map(p => `<tr><td class="mono small">${esc(p.at)}</td><td class="num">${inr(p.amount)}</td><td>${esc(p.requested_by)}</td><td>${ent(p.executed_by)}</td><td>${esc(p.reason)}</td></tr>`).join('')}</table></div>` : ''}
+    </div>
+    <div class="sec"><div class="sec-t">How this page was authorized <span class="badge">${data.trace.length + 1} checks</span></div>
+      <div class="wrap"><table class="tbl"><tr><th>Engine</th><th>Question</th><th>Answer</th></tr>
+      <tr><td><span class="eng ${engCls(data.decision.engine)}">${esc(data.decision.engine)}</span></td><td class="mono small">${esc(data.decision.checks.map(c => c.principal).join(' + '))} can_view case:${esc(c.id)}</td><td>${dec(true)}</td></tr>
+      ${data.trace.map(t => `<tr><td><span class="eng ${t.call === 'BatchCheck' ? 'openfga' : 'legacy'}">${esc(t.call)}</span></td><td class="mono small">${esc(t.query)}</td><td>${dec(t.allowed)}</td></tr>`).join('')}</table></div>
+    </div></div>`;
+  renderPrompts();
+}
+const openById = id => id && (/^FC-/i.test(id) ? openCase(id.toUpperCase()) : viewDoc(id));
+async function act(method, path, body, after) {
+  const {status, data} = await api(path, {method, body});
+  const ok = status < 300;
+  const flash = banner(ok, ok ? (data.message || 'Done') : (data.error || `HTTP ${status}`), data.decision);
+  if (after) await after(flash, ok, data); else if (S.caseId && S.view === 'case') await openCase(S.caseId, flash);
+  else { $('#main').insertAdjacentHTML('afterbegin', flash); }
+  loadActivity();
+}
+async function viewDoc(id) {
+  const {status, data} = await api(`/api/documents/${id}`);
+  loadActivity();
+  const m = document.createElement('div'); m.className = 'modal'; m.onclick = e => { if (e.target === m) m.remove(); };
+  m.innerHTML = `<div class="panel"><div class="panel-h"><div><h2>${esc(data.title || id)}</h2><p>${ent('document:' + id)}</p></div><button class="btn" onclick="this.closest('.modal').remove()">Close</button></div>
+    <div class="panel-b">${status === 200 ? `${banner(true, 'Document opened', data.decision)}<div class="doc-body">${esc(data.body)}</div>` : banner(false, data.error, data.decision)}</div></div>`;
+  document.body.appendChild(m);
+}
+const archive = id => act('DELETE', `/api/documents/${id}`);
+const approve = id => act('POST', `/api/reports/${id}/approve`, null, S.view === 'case' ? null : async flash => { $('#main').innerHTML = flash; loadHome(); });
+function reimburse(e, caseId) { e.preventDefault(); const f = e.target; act('POST', `/api/cases/${caseId}/reimburse`, {amount: +f.amount.value, reason: f.reason.value}); }
+async function upload(e, caseId) {
+  e.preventDefault(); const f = e.target;
+  const {status, data} = await api(`/api/cases/${caseId}/documents`, {method: 'POST', body: {title: f.title.value, body: f.body.value}});
+  const flash = banner(status < 300, status < 300 ? `Uploaded ${data.id}. Relationships: ${data.tuples}` : data.error, data.decision);
+  openCase(caseId, flash);
+}
+async function openAdmin() {
+  S.view = 'admin'; S.caseId = null;
+  $('#main').innerHTML = `<div class="panel"><div class="panel-b">${loading()}</div></div>`;
+  const {status, data} = await api('/api/admin');
+  loadActivity(); loadHome();
+  if (status !== 200) { $('#main').innerHTML = `<div class="panel"><div class="panel-b">${banner(false, data.error, data.decision)}</div></div>`; return; }
+  $('#main').innerHTML = `<div class="panel"><div class="case-h"><div><div class="eyebrow">Administration</div><h1>Platform console</h1><div class="muted small">For running the platform, not for reading customer data.</div></div></div>
+    <div class="sec"><div class="sec-t">AI agents (verified over mTLS)</div>
+      ${data.agents.map(a => `<div class="row"><span class="ic">${I('bot')}</span><div class="t"><b>${esc(a.name)}</b><small class="mono">${esc(a.spiffe_id)}</small></div>${dec(a.online, a.online ? 'ONLINE' : 'OFFLINE')}</div>`).join('')}
+      <p class="small muted" style="margin-top:8px">The rogue <code>fake</code> agent doesn't expose an API; watch it in the activity log.</p></div>
+    <div class="sec"><div class="sec-t">SPIRE registrations</div>${data.spire_entries.map(e => `<div class="mono small" style="padding:3px 0">${esc(e)}</div>`).join('')}</div>
+    <div class="sec"><div class="sec-t">Authorization settings (.env)</div><div class="wrap"><table class="tbl">${Object.entries(data.config).map(([k, v]) => `<tr><td class="mono small">${k}</td><td class="mono small">${esc(v)}</td></tr>`).join('')}</table></div></div>
+    <div class="sec"><div class="sec-t">Records</div><div class="btnrow">${Object.entries(data.counts).map(([k, v]) => `<span class="tag">${k}: <b>${v}</b></span>`).join('')}</div></div></div>`;
+}
+
+// ------------------------------------------------------------- copilot
+function renderPrompts() {
+  const c = S.caseId;
+  const list = c ? [`Summarise case ${c}`, `Read every document in ${c} and summarise it`, `Analyse the transactions in ${c}`,
+    `Reimburse the customer of ${c} ₹500`, `Reimburse the customer of ${c} ₹5,000`, `Approve the suspicious-activity report for ${c}`, 'Show me the VIP KYC file kyc-205']
+    : ['Which cases can I work on?', 'Summarise case FC-1042', 'Show me the VIP KYC file kyc-205', 'Approve report sar-1042'];
+  $('#prompts').innerHTML = list.map(p => `<button class="prompt" onclick="ask(null, ${esc(JSON.stringify(p))})">${esc(p)}</button>`).join('');
+}
+function stepHtml(s) {
+  const o = s.outcome === 'allowed' ? dec(true, 'OK') : s.outcome === 'denied' ? dec(false, 'DENIED') : dec(null, 'ERROR');
+  return `<div class="stp"><div class="stp-h">${ent('agent:' + s.agent)} <b>${esc(s.tool)}</b> <span class="muted mono" style="font-size:11px">${esc(JSON.stringify(s.args))}</span> ${o}</div>
+    ${s.checks && s.checks.length ? checksHtml(s.checks) : ''}${s.detail && !s.checks.length ? `<div class="reason">${esc(s.detail)}</div>` : ''}</div>`;
+}
+function renderChat() {
+  const el = $('#chat'); if (!el) return;
+  el.innerHTML = (S.chat.length ? '' : `<div class="bubble bot">Hi ${esc(S.user.name.split(' ')[0])}. I can look up cases and documents, ask the research agent to analyse transactions, and ask the payment agent to reimburse customers. Everything I do goes through the bank's authorization checks.</div>`)
+    + S.chat.map(m => m.role === 'user' ? `<div class="bubble user">${esc(m.content)}</div>`
+      : `<div class="bubble bot">${esc(m.content)}${m.steps && m.steps.length ? `<div class="steps"><div class="small muted">${m.steps.length} agent action${m.steps.length > 1 ? 's' : ''}</div>${m.steps.map(stepHtml).join('')}</div>` : ''}</div>`).join('')
+    + (S.busy ? `<div class="typing"><span class="spin"></span>Copilot is working…</div>` : '');
+  el.scrollTop = el.scrollHeight;
+}
+async function ask(e, preset) {
+  if (e) e.preventDefault();
+  const text = preset || $('#q').value.trim();
+  if (!text || S.busy) return;
+  $('#q').value = '';
+  const history = S.chat.map(m => ({role: m.role, content: m.content}));
+  S.chat.push({role: 'user', content: text}); S.busy = true; renderChat();
+  const {status, data} = await api('/api/copilot', {method: 'POST', body: {message: text, case_id: S.caseId, history}});
+  S.busy = false;
+  S.chat.push({role: 'assistant', content: status === 200 ? data.reply : `Copilot error: ${data.error || status}`, steps: data.steps || []});
+  renderChat(); loadActivity();
+  if (S.view === 'case' && (data.steps || []).some(s => s.outcome === 'allowed' && /payment|approve/.test(s.tool))) openCase(S.caseId);
+}
+
+// ------------------------------------------------------------- activity
+async function loadActivity() {
+  const el = $('#activity'); if (!el) return;
+  const {status, data} = await api('/api/activity', {quiet: true});
+  if (status !== 200) return;
+  const rows = data.filter(a => !($('#hideRogue')?.checked && a.caller === 'agent:fake')).slice(0, 60);
+  el.innerHTML = rows.length ? `<div style="overflow:auto"><table class="tbl"><tr><th>Time</th><th>Engine</th><th>Who</th><th>Action</th><th>Resource</th><th>Decision</th><th>Why</th></tr>
+    ${rows.map(a => a.kind === 'decision' ? `<tr class="act-row"><td class="mono muted">${esc(a.time)}</td><td><span class="eng ${engCls(a.engine)}">${esc(a.engine)}</span></td>
+      <td>${ent(a.caller)}${a.acting_for ? `<div class="small muted">for ${ent(a.acting_for)}</div>` : ''}<div class="small muted">${esc(a.channel)}</div></td>
+      <td>${esc(a.action)}</td><td>${ent(a.resource)}</td><td>${dec(a.decision === 'ALLOWED', a.decision)}</td>
+      <td>${a.checks.map(c => `<div class="check">${a.checks.length > 1 ? ent(c.principal) + ' ' + dec(c.allowed) : ''}<span class="reason">${esc(c.reason)}</span></div>`).join('')}</td></tr>`
+    : `<tr class="act-row"><td class="mono muted">${esc(a.time)}</td><td><span class="eng other">${esc(a.engine)}</span></td><td>${ent(a.who.includes(':') ? a.who : 'user:' + a.who)}</td>
+      <td colspan="4">${esc(a.status)}${(a.added || []).map(t => `<div class="small" style="color:var(--allow)">+ ${esc(t)}</div>`).join('')}${(a.removed || []).map(t => `<div class="small" style="color:var(--deny)">− ${esc(t)}</div>`).join('')}</td></tr>`).join('')}</table></div>`
+    : `<div class="empty">No decisions yet</div>`;
+}
+setInterval(() => { if (S.user) loadActivity(); }, 4000);
+boot();
+</script>
+</body>
+</html>

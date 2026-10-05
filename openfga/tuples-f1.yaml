@@ -1,0 +1,40 @@
+# Which team works which case
+- user: group:ai-team
+  relation: team
+  object: case:FC-1042
+- user: group:managers
+  relation: team
+  object: case:FC-2077
+
+# Which case each document belongs to
+- user: case:FC-1042
+  relation: parent
+  object: document:kyc-101
+- user: case:FC-1042
+  relation: parent
+  object: document:stmt-101
+- user: case:FC-1042
+  relation: parent
+  object: document:email-101
+- user: case:FC-2077
+  relation: parent
+  object: document:kyc-205
+- user: case:FC-2077
+  relation: parent
+  object: document:stmt-205
+
+# Who uploaded (owns) which document
+- user: user:rahul
+  relation: owner
+  object: document:stmt-101
+- user: user:rahul
+  relation: owner
+  object: document:email-101
+- user: user:amit
+  relation: owner
+  object: document:stmt-205
+
+# Amit manages the AI-Team (a fact that lives in OpenFGA, not in Keycloak)
+- user: user:amit
+  relation: manager
+  object: group:ai-team

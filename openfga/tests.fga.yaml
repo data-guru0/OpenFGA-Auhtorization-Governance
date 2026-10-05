@@ -1,0 +1,91 @@
+# Policy tests for the NexaBank model: one block per compliance finding.
+# Run:  docker compose run --rm fga model test --tests tests.fga.yaml
+name: NexaBank Fraud Ops policy
+model_file: ./model.fga
+tuple_files:
+  - ./tuples-f1.yaml
+  - ./tuples-f2.yaml
+  - ./tuples-f3.yaml
+
+# Memberships that Keycloak provides at login (the app syncs them)
+tuples:
+  - { user: user:rahul, relation: member, object: group:ai-team }
+  - { user: user:amit, relation: member, object: group:managers }
+  - { user: user:neha, relation: member, object: group:ai-reviewers }
+  - { user: user:sudhanshu, relation: member, object: group:administrators }
+
+tests:
+  - name: F1 need-to-know - each team sees only its own cases
+    check:
+      - user: user:rahul
+        object: document:kyc-101
+        assertions: { can_view: true, can_delete: false }
+      - user: user:rahul
+        object: document:kyc-205
+        assertions: { can_view: false }
+      - user: user:amit
+        object: document:kyc-205
+        assertions: { can_view: true }
+      - user: user:neha
+        object: case:FC-1042
+        assertions: { can_view: false }
+    list_objects:
+      - user: user:rahul
+        type: case
+        assertions: { can_view: [case:FC-1042] }
+
+  - name: F2 maker-checker, and admins without customer data
+    check:
+      - user: user:rahul
+        object: report:sar-1042
+        assertions: { can_view: true, can_approve: false }
+      - user: user:neha
+        object: report:sar-1042
+        assertions: { can_approve: true }
+      - user: user:sudhanshu
+        object: dashboard:admin
+        assertions: { can_view: true }
+      - user: user:sudhanshu
+        object: document:kyc-101
+        assertions: { can_view: false }
+
+  - name: F3 least privilege for AI agents
+    check:
+      - user: agent:orchestrator
+        object: document:kyc-101
+        assertions: { can_view: true }
+      - user: agent:orchestrator
+        object: document:kyc-205
+        assertions: { can_view: false }
+      - user: agent:payment
+        object: tool:payment
+        context: { amount: 500 }
+        assertions: { can_execute: true }
+      - user: agent:payment
+        object: tool:payment
+        context: { amount: 5000 }
+        assertions: { can_execute: false }
+      - user: agent:fake
+        object: document:kyc-101
+        assertions: { can_view: false }
+
+  - name: F4 the person behind the Copilot must be allowed too
+    check:
+      - user: user:neha
+        object: document:kyc-101
+        assertions: { can_view: false }
+      - user: user:rahul
+        object: tool:payment
+        context: { amount: 500 }
+        assertions: { can_execute: false }
+
+  - name: F5 audit - who can see the customer's KYC file
+    list_users:
+      - object: document:kyc-101
+        user_filter: [{ type: user }]
+        assertions:
+          can_view: { users: [user:amit, user:rahul] }
+      - object: document:kyc-101
+        user_filter: [{ type: agent }]
+        assertions:
+          can_view: { users: [agent:orchestrator, agent:research] }

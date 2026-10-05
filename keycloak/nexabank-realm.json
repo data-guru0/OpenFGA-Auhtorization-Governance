@@ -1,0 +1,74 @@
+{
+  "realm": "nexabank",
+  "displayName": "NexaBank",
+  "enabled": true,
+  "accessTokenLifespan": 900,
+  "roles": {
+    "realm": [
+      { "name": "employee", "description": "Every NexaBank employee" },
+      { "name": "manager", "description": "People managers" },
+      { "name": "ai-reviewer", "description": "Reviews suspicious-activity reports" },
+      { "name": "admin", "description": "Platform administrators" }
+    ]
+  },
+  "groups": [
+    { "name": "Employees", "realmRoles": ["employee"] },
+    { "name": "AI-Team", "realmRoles": ["employee"] },
+    { "name": "Managers", "realmRoles": ["manager"] },
+    { "name": "AI-Reviewers", "realmRoles": ["ai-reviewer"] },
+    { "name": "Administrators", "realmRoles": ["admin"] }
+  ],
+  "clients": [
+    {
+      "clientId": "nexabank-app",
+      "name": "NexaBank Fraud Ops",
+      "publicClient": false,
+      "secret": "nexabank-app-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost:8000/callback"],
+      "webOrigins": ["http://localhost:8000"],
+      "attributes": { "post.logout.redirect.uris": "http://localhost:8000/*" },
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "config": { "claim.name": "groups", "full.path": "false", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true" }
+        },
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": { "claim.name": "roles", "multivalued": "true", "jsonType.label": "String", "id.token.claim": "false", "access.token.claim": "true", "userinfo.token.claim": "true" }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "rahul", "firstName": "Rahul", "lastName": "Verma", "email": "rahul@nexabank.demo",
+      "enabled": true, "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
+      "groups": ["/Employees", "/AI-Team"]
+    },
+    {
+      "username": "amit", "firstName": "Amit", "lastName": "Shah", "email": "amit@nexabank.demo",
+      "enabled": true, "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
+      "groups": ["/Employees", "/Managers"]
+    },
+    {
+      "username": "neha", "firstName": "Neha", "lastName": "Iyer", "email": "neha@nexabank.demo",
+      "enabled": true, "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
+      "groups": ["/Employees", "/AI-Reviewers"]
+    },
+    {
+      "username": "sudhanshu", "firstName": "Sudhanshu", "lastName": "Gusain", "email": "sudhanshu@nexabank.demo",
+      "enabled": true, "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
+      "groups": ["/Employees", "/Administrators"]
+    }
+  ]
+}

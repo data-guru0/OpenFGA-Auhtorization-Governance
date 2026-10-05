@@ -1,0 +1,57 @@
+model
+  schema 1.1
+
+# ---------- who: identities verified elsewhere ----------
+type user     # a person, signed in through Keycloak     -> user:rahul
+type agent    # an AI agent, identified by SPIFFE/SPIRE  -> agent:orchestrator
+
+# ---------- the organisation ----------
+type group
+  relations
+    define manager: [user]
+    define member: [user] or manager
+    define assigned_agent: [agent]
+
+type workspace
+  relations
+    define admin: [user]
+
+# ---------- what: protected resources ----------
+type case
+  relations
+    define team: [group]
+    define viewer: [user] or member from team or assigned_agent from team
+    define can_view: viewer
+
+type document
+  relations
+    define parent: [case]
+    define owner: [user]
+    define viewer: [user, agent] or owner or viewer from parent
+    define can_view: viewer
+    define can_delete: viewer
+
+type report
+  relations
+    define parent: [case]
+    define preparer: [user]
+    define reviewer: [user, group#member]
+    define viewer: [user] or preparer or reviewer or viewer from parent
+    define can_view: viewer
+    define can_approve: reviewer but not preparer
+
+type tool
+  relations
+    define executor: [user, group#member, agent, agent with within_limit]
+    define can_execute: executor
+
+type dashboard
+  relations
+    define workspace: [workspace]
+    define viewer: [user] or admin from workspace
+    define can_view: viewer
+
+# ---------- context checked at request time ----------
+condition within_limit(amount: int, limit: int) {
+  amount <= limit
+}

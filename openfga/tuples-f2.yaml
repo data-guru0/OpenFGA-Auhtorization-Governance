@@ -1,0 +1,27 @@
+# Sudhanshu administers the platform workspace; the admin dashboard belongs to it
+- user: user:sudhanshu
+  relation: admin
+  object: workspace:nexabank
+- user: workspace:nexabank
+  relation: workspace
+  object: dashboard:admin
+
+# Each report belongs to a case, has a preparer, and is reviewed by the AI-Reviewers group
+- user: case:FC-1042
+  relation: parent
+  object: report:sar-1042
+- user: user:rahul
+  relation: preparer
+  object: report:sar-1042
+- user: group:ai-reviewers#member
+  relation: reviewer
+  object: report:sar-1042
+- user: case:FC-2077
+  relation: parent
+  object: report:sar-2077
+- user: user:amit
+  relation: preparer
+  object: report:sar-2077
+- user: group:ai-reviewers#member
+  relation: reviewer
+  object: report:sar-2077
